@@ -3,281 +3,308 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Shadow Dungeon Multi-Lang</title>
+    <title>Shadow Dungeon - Fix Edition</title>
     <style>
-        body {
-            background-color: #0a0a0a;
-            color: #d1d1d1;
-            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            min-height: 100vh; margin: 0; user-select: none; touch-action: manipulation;
-        }
-        #game-container { text-align: center; border: 2px solid #444; padding: 10px; background-color: #000; width: 95%; max-width: 450px; }
-        #screen { font-size: 14px; line-height: 1.1; letter-spacing: 1px; white-space: pre; margin-bottom: 10px; color: #3f3; overflow-x: hidden; }
-        #log { height: 80px; overflow-y: hidden; font-size: 12px; color: #888; text-align: left; border-top: 1px solid #222; padding-top: 5px; }
-        #controls { display: grid; grid-template-areas: ". up ." "left wait right" ". down ."; gap: 10px; margin-top: 15px; justify-content: center; }
-        .btn { width: 60px; height: 60px; background-color: #222; border: 1px solid #555; color: white; font-size: 20px; display: flex; justify-content: center; align-items: center; border-radius: 8px; cursor: pointer; }
+        body { background-color: #0a0a0a; color: #d1d1d1; font-family: 'Consolas', 'Monaco', 'Courier New', monospace; display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 100vh; margin: 0; user-select: none; touch-action: manipulation; }
+        #game-container { position: relative; text-align: center; border: 2px solid #444; padding: 10px; background-color: #000; width: 95%; max-width: 450px; }
+        #top-bar { display: flex; justify-content: center; align-items: center; gap: 10px; margin-bottom: 10px; }
+        #lang-selector { display: flex; gap: 5px; }
+        .lang-btn { background: #222; border: 1px solid #444; color: #888; padding: 4px 10px; font-size: 12px; cursor: pointer; border-radius: 4px; }
+        .lang-btn.active { border-color: #3f3; color: #3f3; background: #1a1a1a; }
+        .help-circle { width: 26px; height: 26px; border-radius: 50%; border: 1px solid #55a; background: #224; color: #88f; font-size: 16px; display: flex; justify-content: center; align-items: center; cursor: pointer; font-weight: bold; }
+
+        #guide-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.95); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 10; color: #fff; padding: 20px; box-sizing: border-box; border: 2px solid #3f3; }
+        .guide-title { font-size: 20px; color: #3f3; margin-bottom: 15px; font-weight: bold; }
+        .guide-text { font-size: 13px; line-height: 1.5; margin-bottom: 25px; text-align: left; }
+
+        #screen { font-size: 14px; line-height: 1.1; letter-spacing: 1px; white-space: pre; margin-bottom: 10px; color: #3f3; min-height: 250px; font-weight: bold; }
+        #log { height: 85px; overflow-y: hidden; font-size: 12px; color: #888; text-align: left; border-top: 1px solid #222; padding-top: 5px; }
+        
+        #controls { display: grid; grid-template-columns: repeat(3, 75px); grid-template-rows: repeat(3, 75px); gap: 10px; margin-top: 15px; justify-content: center; }
+        .btn { width: 75px; height: 75px; background-color: #222; border: 1px solid #555; color: white; display: flex; justify-content: center; align-items: center; border-radius: 8px; cursor: pointer; font-size: 18px; }
         .btn:active { background-color: #444; }
-        #up { grid-area: up; } #down { grid-area: down; } #left { grid-area: left; } #right { grid-area: right; } #wait { grid-area: wait; background-color: #333; font-size: 14px; }
-        .log-entry { margin-bottom: 2px; padding-left: 5px; border-left: 2px solid #333; }
-        .log-player { color: #fff; border-left-color: #fff; }
-        .log-enemy { color: #ff5555; border-left-color: #ff5555; }
-        .log-system { color: #55aaff; border-left-color: #55aaff; }
-        .log-boss { color: #ff55ff; font-weight: bold; border-left-color: #ff55ff; }
-        .log-lvup { color: #ffff55; font-weight: bold; }
+        
+        #up { grid-column: 2; grid-row: 1; }
+        #left { grid-column: 1; grid-row: 2; }
+        #wait { grid-column: 2; grid-row: 2; background-color: #333; font-size: 12px; word-break: break-all; padding: 2px; }
+        #right { grid-column: 3; grid-row: 2; }
+        #down { grid-column: 2; grid-row: 3; }
+        #skill { grid-column: 3; grid-row: 1; background-color: #422; border-color: #a55; color: #f88; font-size: 10px; }
+
+        .log-player { color: #fff; } .log-enemy { color: #ff5555; } .log-system { color: #55aaff; } .log-boss { color: #ff55ff; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div id="game-container">
+    <div id="top-bar">
+        <div id="lang-selector">
+            <div class="lang-btn" id="btn-ja" onclick="setLang('ja')">JP</div>
+            <div class="lang-btn" id="btn-en" onclick="setLang('en')">EN</div>
+            <div class="lang-btn" id="btn-es" onclick="setLang('es')">ES</div>
+        </div>
+        <div class="help-circle" onclick="openGuide()">?</div>
+    </div>
+
+    <div id="guide-overlay" onclick="closeGuide()">
+        <div class="guide-title" id="g-title"></div>
+        <div class="guide-text" id="g-body"></div>
+        <div style="font-size:11px; color:#888;">Tap to Start / 画面をタップして開始</div>
+    </div>
+
     <div id="screen"></div>
     <div id="log"></div>
+    
     <div id="controls">
-        <div class="btn" id="up" onclick="playerMove(0, -1)">↑</div>
-        <div class="btn" id="left" onclick="playerMove(-1, 0)">←</div>
-        <div class="btn" id="wait" onclick="playerMove(0, 0)">WAIT</div>
-        <div class="btn" id="right" onclick="playerMove(1, 0)">→</div>
-        <div class="btn" id="down" onclick="playerMove(0, 1)">↓</div>
+        <div class="btn" id="up" onclick="handleInput(0, -1)">↑</div>
+        <div class="btn" id="skill" onclick="useSkill()">WARP</div>
+        <div class="btn" id="left" onclick="handleInput(-1, 0)">←</div>
+        <div class="btn" id="wait" onclick="handleInput(0, 0)">WAIT</div>
+        <div class="btn" id="right" onclick="handleInput(1, 0)">→</div>
+        <div class="btn" id="down" onclick="handleInput(0, 1)">↓</div>
     </div>
 </div>
 
 <script>
-    // --- 言語設定辞書 ---
     const i18n = {
         ja: {
-            start: "影の迷宮へ足を踏み入れた...",
-            bossNear: "最深部の空気が震えている...",
-            wall: "道が塞がれている。",
-            potion: "ポーションを回収。傷が癒えた。",
-            stairs: "深層へ降りる... ({depth}F)",
-            lvup: "レベルアップ！ 強さが身に染みる (Lv{lv})",
-            attack: "{name}に {dmg} のダメージ！",
-            defeat: "{name}を倒した。",
-            damaged: "{name}の攻撃！ {dmg} のダメージ！",
-            win: "守護者を倒し、迷宮の主となった！",
-            lose: "力尽き、影に呑まれた...",
-            floor: "階",
-            monsters: ["影のネズミ", "彷徨う鎧", "深淵の眼"],
-            boss: "古の守護者"
+            gTitle: "迷宮ガイド", gBody: "【目的】5Fの指揮者を倒せ<br>【HP】命の息吹。0で終了<br>【移動】矢印で移動・攻撃<br>【待機】その場で1ターン経過<br>【ワープ】HPを5消費してランダム転送",
+            start: "演奏を開始します。", bossNear: "不穏な旋律が近づいている...",
+            wall: "壁にはね返された。", potion: "リード交換！HP回復。",
+            stairs: "次のフロアへ... ({d}F)", lvup: "Level Up! (Lv{l})",
+            attack: "{n}へ攻撃！ {dmg}点", defeat: "{n}を消し去った。",
+            damaged: "{n}の反撃！ {dmg}点", warp: "音の渦で転送された！",
+            hp: "HP", atk: "ATK", floor: "FL", wait: "待機", warpBtn: "ワープ",
+            mNames: ["ノイズ・ラット", "不協和音の鎧", "沈黙の眼"], bName: "古の指揮者",
+            win: "伝説の奏者となった！", lose: "音が途絶えた..."
+        },
+        en: {
+            gTitle: "GUIDE", gBody: "Goal: Defeat boss on 5F<br>HP: Life breath. 0 = End<br>Move: Arrows to move/attack<br>Wait: Stay 1 turn<br>Warp: Spend 5 HP to teleport",
+            start: "Performance start.", bossNear: "An ominous melody approaches...",
+            wall: "It's a wall.", potion: "Reed changed! HP up.",
+            stairs: "Deeper... ({d}F)", lvup: "Level Up! (Lv{l})",
+            attack: "Attack {n}! {dmg} dmg", defeat: "Purified {n}.",
+            damaged: "{n} counter! {dmg} dmg", warp: "Teleported!",
+            hp: "HP", atk: "ATK", floor: "FL", wait: "WAIT", warpBtn: "WARP",
+            mNames: ["Noise Rat", "Discord Armor", "Silent Eye"], bName: "Ancient Conductor",
+            win: "Legend Soloist!", lose: "Music stopped..."
         },
         es: {
-            start: "Has entrado en la Mazmorra de las Sombras...",
-            bossNear: "El aire vibra en lo más profundo...",
-            wall: "El camino está bloqueado.",
-            potion: "Poción usada. Tus heridas sanan.",
-            stairs: "Bajando al nivel inferior... ({depth}F)",
-            lvup: "¡Subiste de nivel! Sientes más poder (Nv{lv})",
-            attack: "¡Atacas a {name} causando {dmg}!",
-            defeat: "Has derrotado a {name}.",
-            damaged: "¡{name} ataca! Sufres {dmg} de daño.",
-            win: "¡Victoria! Has conquistado la mazmorra.",
-            lose: "Has caído... las sombras te consumen.",
-            floor: "F",
-            monsters: ["Rata Sombría", "Armadura Errante", "Ojo del Abismo"],
-            boss: "El Guardián Antiguo"
+            gTitle: "GUÍA", gBody: "Meta: Vencer jefe en 5F<br>HP: Vida. 0 = Fin<br>Mover: Flechas para atacar<br>Espera: 1 turno quieto<br>Warp: Gasta 5 HP para teleport",
+            start: "Empieza la función.", bossNear: "Melodía inquietante cerca...",
+            wall: "Es un muro.", potion: "¡HP recuperado!",
+            stairs: "Piso siguiente... ({d}F)", lvup: "¡Nivel sube! (Lv{l})",
+            attack: "¡Ataca a {n}! {dmg}", defeat: "Venciste a {n}.",
+            damaged: "¡{n} ataca! {dmg}", warp: "¡Teletransportado!",
+            hp: "HP", atk: "ATQ", floor: "PISO", wait: "ESPERA", warpBtn: "WARP",
+            mNames: ["Rata Ruido", "Armadura Discord", "Ojo Silencio"], bName: "Director Antiguo",
+            win: "¡Solista de leyenda!", lose: "Música detenida..."
         }
     };
 
-    // ブラウザの言語を取得 (スペイン語以外は日本語をデフォルトに)
-    const lang = navigator.language.startsWith('es') ? 'es' : 'ja';
-    const T = i18n[lang];
+    let curLang = 'ja';
+    let gameState = { depth: 1, player: {}, map: [], explored: [], monsters: [], log: [], gameOver: false, initialized: false };
 
-    // --- 設定 ---
-    const WIDTH = 30; const HEIGHT = 15; const MAX_DEPTH = 5; const VISION_RADIUS = 4;
-    const TILE_WALL = '#'; const TILE_FLOOR = '·'; const TILE_PLAYER = '@';
-    const TILE_MONSTER = 'E'; const TILE_BOSS = 'Ω'; const TILE_STAIRS = '>';
-    const TILE_POTION = 'P'; const TILE_UNKNOWN = ' ';
+    function setLang(lang) {
+        curLang = lang;
+        const T = i18n[curLang];
+        document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(`btn-${lang}`).classList.add('active');
+        
+        const waitBtn = document.getElementById('wait');
+        waitBtn.textContent = T.wait;
+        waitBtn.style.fontSize = T.wait.length > 5 ? "10px" : "14px";
 
-    let gameState = {
-        depth: 1,
-        player: { x: 0, y: 0, hp: 25, maxHp: 25, atk: 5, exp: 0, lv: 1, nextExp: 15 },
-        map: [], explored: [], monsters: [], log: [], gameOver: false
-    };
-
-    const monsterPool = [
-        { name: T.monsters[0], tile: 'r', hp: 5, atk: 2, exp: 4, color: '#999' },
-        { name: T.monsters[1], tile: 'A', hp: 12, atk: 5, exp: 10, color: '#aaa' },
-        { name: T.monsters[2], tile: 'e', hp: 20, atk: 8, exp: 20, color: '#f55' }
-    ];
-    const bossData = { name: T.boss, tile: 'Ω', hp: 60, atk: 12, exp: 0, color: '#f0f' };
-
-    function init() {
-        addLog(T.start, 'log-system');
-        gameState.depth = 1;
-        gameState.player = { x: 0, y: 0, hp: 25, maxHp: 25, atk: 5, exp: 0, lv: 1, nextExp: 15 };
-        gameState.gameOver = false;
-        setupLevel();
+        document.getElementById('skill').innerHTML = `${T.warpBtn}<br>(HP-5)`;
+        document.getElementById('g-title').textContent = T.gTitle;
+        document.getElementById('g-body').innerHTML = T.gBody;
+        
+        if (gameState.initialized) draw();
     }
+    // --- キーボード操作の追加 ---
+    window.addEventListener('keydown', (e) => {
+        if (gameState.gameOver || document.getElementById('guide-overlay').style.display === 'flex') return;
 
-    function setupLevel() {
-        gameState.map = generateMap();
-        gameState.explored = Array.from({ length: HEIGHT }, () => Array(WIDTH).fill(false));
-        gameState.monsters = [];
-        placeOnFloor((x, y) => { gameState.player.x = x; gameState.player.y = y; });
-        if (gameState.depth < MAX_DEPTH) {
-            placeOnFloor((x, y) => gameState.map[y][x] = TILE_STAIRS);
-        } else {
-            placeOnFloor((x, y) => {
-                const boss = { ...bossData, x, y };
-                gameState.map[y][x] = TILE_BOSS;
-                gameState.monsters.push(boss);
-                addLog(T.bossNear, 'log-boss');
-            });
+        switch(e.key) {
+            case 'ArrowUp':    case 'w': case '8': handleInput(0, -1); break;
+            case 'ArrowDown':  case 's': case '2': handleInput(0, 1);  break;
+            case 'ArrowLeft':  case 'a': case '4': handleInput(-1, 0); break;
+            case 'ArrowRight': case 'd': case '6': handleInput(1, 0);  break;
+            case ' ':          case '5':           handleInput(0, 0);  break; // WAIT
         }
-        const numMonsters = 3 + gameState.depth;
-        for (let i = 0; i < numMonsters; i++) {
-            if (gameState.depth === MAX_DEPTH && i === 0) continue;
-            placeOnFloor((x, y) => {
-                const type = monsterPool[Math.min(gameState.depth - 1, monsterPool.length - 1)];
-                gameState.monsters.push({ ...type, x, y });
-                gameState.map[y][x] = TILE_MONSTER;
-            });
-        }
-        placeOnFloor((x, y) => gameState.map[y][x] = TILE_POTION);
-        updateVision(); draw();
-    }
+    });
 
-    function placeOnFloor(cb) {
-        let x, y; do { x = Math.floor(Math.random() * WIDTH); y = Math.floor(Math.random() * HEIGHT); } while (gameState.map[y][x] !== TILE_FLOOR);
-        cb(x, y);
-    }
-
-    function generateMap() {
-        let map = [];
-        for (let y = 0; y < HEIGHT; y++) {
-            map[y] = [];
-            for (let x = 0; x < WIDTH; x++) {
-                map[y][x] = (x === 0 || x === WIDTH - 1 || y === 0 || y === HEIGHT - 1 || Math.random() < 0.15) ? TILE_WALL : TILE_FLOOR;
-            }
-        }
-        return map;
-    }
-
-    function updateVision() {
-        for (let y = 0; y < HEIGHT; y++) {
-            for (let x = 0; x < WIDTH; x++) {
-                if (Math.sqrt((x - gameState.player.x)**2 + (y - gameState.player.y)**2) <= VISION_RADIUS) gameState.explored[y][x] = true;
-            }
-        }
+    function addLog(key, type, params = {}) {
+        gameState.log.push({ key, type, params });
     }
 
     function draw() {
         const screen = document.getElementById('screen');
-        let view = ""; const p = gameState.player;
-        let hud = `Lv:${p.lv} HP:${p.hp}/${p.maxHp} ATK:${p.atk} ${gameState.depth}${T.floor}\n`;
-        for (let y = 0; y < HEIGHT; y++) {
-            for (let x = 0; x < WIDTH; x++) {
-                const isVisible = Math.sqrt((x - p.x)**2 + (y - p.y)**2) <= VISION_RADIUS;
-                if (x === p.x && y === p.y) view += `<span style="color:#fff;">${TILE_PLAYER}</span>`;
+        const T = i18n[curLang];
+        const p = gameState.player;
+        
+        let hud = `Lv:${p.lv}  ${T.hp}:${p.hp}/${p.maxHp}  ${T.atk}:${p.atk}  ${T.floor}:${gameState.depth}\n`;
+        
+        let view = "";
+        for (let y = 0; y < 15; y++) {
+            for (let x = 0; x < 30; x++) {
+                const isVisible = Math.sqrt((x - p.x)**2 + (y - p.y)**2) <= p.vision;
+                if (x === p.x && y === p.y) view += `<span style="color:#fff;">@</span>`;
                 else if (isVisible) {
-                    let tile = gameState.map[y][x];
-                    if (tile === TILE_MONSTER || tile === TILE_BOSS) {
+                    const tile = gameState.map[y][x];
+                    if (tile === 'E' || tile === 'Ω') {
                         const m = gameState.monsters.find(m => m.x === x && m.y === y);
-                        view += `<span style="color:${m.color};">${m.tile}</span>`;
-                    } else if (tile === TILE_WALL) view += `<span style="color:#444;">${TILE_WALL}</span>`;
-                    else if (tile === TILE_POTION) view += `<span style="color:#5f5;">${TILE_POTION}</span>`;
-                    else if (tile === TILE_STAIRS) view += `<span style="color:#ff5;">${TILE_STAIRS}</span>`;
-                    else view += `<span style="color:#222;">${TILE_FLOOR}</span>`;
+                        view += `<span style="color:${m ? m.color : '#aaa'};">${m ? m.tile : 'E'}</span>`;
+                    } else if (tile === '#') view += `<span style="color:#444;">#</span>`;
+                    else if (tile === 'L') view += `<span style="color:#5f5;">L</span>`;
+                    else if (tile === '>') view += `<span style="color:#ff5;">></span>`;
+                    else view += `<span style="color:#222;">·</span>`;
                 } else if (gameState.explored[y][x]) {
-                    view += `<span style="color:#111;">${gameState.map[y][x] === TILE_WALL ? TILE_WALL : TILE_FLOOR}</span>`;
-                } else view += TILE_UNKNOWN;
+                    const t = gameState.map[y][x];
+                    view += `<span style="color:#111;">${(t==='E'||t==='Ω'||t==='L') ? '·' : t}</span>`;
+                } else view += " ";
             }
             view += "\n";
         }
         screen.innerHTML = hud + "\n" + view;
-        drawLog();
-    }
 
-    function drawLog() {
-        const logDiv = document.getElementById('log'); logDiv.innerHTML = "";
-        gameState.log.slice(-4).forEach(e => {
-            const d = document.createElement('div'); d.className = `log-entry ${e.type}`; d.textContent = e.text;
+        const logDiv = document.getElementById('log');
+        logDiv.innerHTML = "";
+        gameState.log.slice(-4).forEach(entry => {
+            let msg = T[entry.key] || entry.key;
+            if (entry.params.nIsMonster) {
+                const m = entry.params.monsterObj;
+                msg = msg.replace(`{n}`, m.isBoss ? T.bName : T.mNames[m.typeIndex]);
+            }
+            Object.keys(entry.params).forEach(k => msg = msg.replace(`{${k}}`, entry.params[k]));
+            const d = document.createElement('div');
+            d.className = entry.type; d.textContent = msg;
             logDiv.appendChild(d);
         });
     }
 
-    function addLog(text, type = 'log-system') { gameState.log.push({ text, type }); drawLog(); }
+    function init() {
+        gameState.player = { x: 0, y: 0, hp: 30, maxHp: 30, atk: 6, exp: 0, lv: 1, nextExp: 15, vision: 4 };
+        gameState.depth = 1; gameState.log = []; gameState.gameOver = false;
+        addLog('start', 'log-system');
+        setupLevel();
+        gameState.initialized = true;
+    }
 
-    function playerMove(dx, dy) {
-        if (gameState.gameOver) return;
-        const nx = gameState.player.x + dx; const ny = gameState.player.y + dy;
-        if (nx < 0 || nx >= WIDTH || ny < 0 || ny >= HEIGHT) return;
-        const tile = gameState.map[ny][nx];
-        if (tile === TILE_WALL) {
-            addLog(T.wall, 'log-system');
-        } else if (tile === TILE_MONSTER || tile === TILE_BOSS) {
-            const m = gameState.monsters.find(m => m.x === nx && m.y === ny);
-            if (m) {
-                const dmg = gameState.player.atk + Math.floor(Math.random() * 3);
-                m.hp -= dmg;
-                addLog(T.attack.replace('{name}', m.name).replace('{dmg}', dmg), 'log-player');
-                if (m.hp <= 0) {
-                    addLog(T.defeat.replace('{name}', m.name), 'log-system');
-                    gainExp(m.exp); gameState.map[m.y][m.x] = TILE_FLOOR;
-                    gameState.monsters = gameState.monsters.filter(mon => mon !== m);
-                    if (m.tile === TILE_BOSS) { endGame(true); return; }
-                }
-            }
-            monstersTurn();
-        } else {
-            gameState.player.x = nx; gameState.player.y = ny;
-            if (tile === TILE_POTION) {
-                gameState.player.hp = Math.min(gameState.player.maxHp, gameState.player.hp + 10);
-                addLog(T.potion, 'log-player'); gameState.map[ny][nx] = TILE_FLOOR;
-            } else if (tile === TILE_STAIRS) {
-                gameState.depth++; addLog(T.stairs.replace('{depth}', gameState.depth), 'log-system');
-                setupLevel(); return;
-            }
-            if(gameState.player.hp < gameState.player.maxHp && Math.random() < 0.2) gameState.player.hp++;
-            monstersTurn();
+    function setupLevel() {
+        gameState.map = Array.from({ length: 15 }, () => Array(30).fill('#'));
+        for (let y = 1; y < 14; y++) for (let x = 1; x < 29; x++) if (Math.random() > 0.18) gameState.map[y][x] = '·';
+        gameState.explored = Array.from({ length: 15 }, () => Array(30).fill(false));
+        gameState.monsters = [];
+        
+        const place = (cb) => {
+            let x, y; do { x = Math.floor(Math.random()*30); y = Math.floor(Math.random()*15); } while(gameState.map[y][x] !== '·');
+            cb(x, y);
+        };
+
+        place((x, y) => { gameState.player.x = x; gameState.player.y = y; });
+        if (gameState.depth < 5) place((x, y) => gameState.map[y][x] = '>');
+        else place((x, y) => {
+            gameState.monsters.push({ isBoss: true, tile: 'Ω', hp: 80, atk: 15, color: '#f0f', x, y });
+            gameState.map[y][x] = 'Ω'; addLog('bossNear', 'log-boss');
+        });
+
+        for (let i = 0; i < 3 + gameState.depth; i++) {
+            place((x, y) => {
+                const typeIdx = Math.min(gameState.depth - 1, 2);
+                gameState.monsters.push({ typeIndex: typeIdx, tile: ['r','A','e'][typeIdx], hp: 10*gameState.depth, atk: 3*gameState.depth, color: '#aaa', x, y });
+                gameState.map[y][x] = 'E';
+            });
         }
+        place((x, y) => gameState.map[y][x] = 'L');
         updateVision(); draw();
     }
 
-    function gainExp(amt) {
-        gameState.player.exp += amt;
-        if (gameState.player.exp >= gameState.player.nextExp) {
-            const p = gameState.player; p.lv++; p.maxHp += 8; p.hp = p.maxHp; p.atk += 3;
-            p.exp -= p.nextExp; p.nextExp = Math.floor(p.nextExp * 1.6);
-            addLog(T.lvup.replace('{lv}', p.lv), 'log-lvup');
+    function handleInput(dx, dy) {
+        if (gameState.gameOver || document.getElementById('guide-overlay').style.display === 'flex') return;
+        
+        const nx = gameState.player.x + dx, ny = gameState.player.y + dy;
+        const tile = gameState.map[ny][nx];
+        
+        if (tile === '#') { 
+            addLog('wall', 'log-system'); 
+        } else if (tile === 'E' || tile === 'Ω') {
+            const m = gameState.monsters.find(m => m.x === nx && m.y === ny);
+            const dmg = gameState.player.atk + Math.floor(Math.random()*5);
+            m.hp -= dmg;
+            addLog('attack', 'log-player', { nIsMonster: true, monsterObj: m, dmg: dmg });
+            if (m.hp <= 0) {
+                addLog('defeat', 'log-system', { nIsMonster: true, monsterObj: m });
+                gameState.map[ny][nx] = '·';
+                gameState.monsters = gameState.monsters.filter(mon => mon !== m);
+                if (m.isBoss) { endGame(true); return; }
+                checkLvUp();
+            }
+        } else {
+            gameState.player.x = nx; gameState.player.y = ny;
+            if (tile === 'L') { 
+                gameState.player.hp = Math.min(gameState.player.maxHp, gameState.player.hp + 12); 
+                addLog('potion', 'log-player'); 
+                gameState.map[ny][nx] = '·'; 
+            } else if (tile === '>') { 
+                gameState.depth++; 
+                addLog('stairs', 'log-system', { d: gameState.depth }); 
+                setupLevel(); 
+                return; 
+            }
         }
+        monstersTurn();
+        updateVision(); 
+        draw();
+    }
+
+    function checkLvUp() {
+        const p = gameState.player; p.exp += 10;
+        if (p.exp >= p.nextExp) { p.lv++; p.maxHp += 10; p.hp = p.maxHp; p.atk += 4; p.exp = 0; addLog('lvup', 'log-lvup', { l: p.lv }); }
     }
 
     function monstersTurn() {
         gameState.monsters.forEach(m => {
-            const dx = gameState.player.x - m.x; const dy = gameState.player.y - m.y;
-            const dist = Math.abs(dx) + Math.abs(dy);
-            if (dist === 1) {
-                const dmg = Math.max(1, m.atk - Math.floor(Math.random() * 2));
+            const dx = Math.abs(gameState.player.x - m.x), dy = Math.abs(gameState.player.y - m.y);
+            if (dx + dy === 1) {
+                const dmg = Math.max(1, m.atk - Math.floor(Math.random()*3));
                 gameState.player.hp -= dmg;
-                addLog(T.damaged.replace('{name}', m.name).replace('{dmg}', dmg), 'log-enemy');
+                addLog('damaged', 'log-enemy', { nIsMonster: true, monsterObj: m, dmg: dmg });
                 if (gameState.player.hp <= 0) endGame(false);
-            } else if (dist <= 5) {
-                let mx = m.x + (dx > 0 ? 1 : dx < 0 ? -1 : 0);
-                let my = m.y + (dy > 0 ? 1 : dy < 0 ? -1 : 0);
-                if (gameState.map[my][mx] === TILE_FLOOR) {
-                    gameState.map[m.y][m.x] = TILE_FLOOR; m.x = mx; m.y = my;
-                    gameState.map[my][mx] = (m.tile === TILE_BOSS ? TILE_BOSS : TILE_MONSTER);
+            } else {
+                // プレイヤーが隣にいない場合、ランダム移動
+                const dirs = [[0,1],[0,-1],[1,0],[-1,0]];
+                const d = dirs[Math.floor(Math.random()*4)];
+                const tx = m.x + d[0], ty = m.y + d[1];
+                if (gameState.map[ty][tx] === '·' && !(tx === gameState.player.x && ty === gameState.player.y)) {
+                    gameState.map[m.y][m.x] = '·';
+                    m.x = tx; m.y = ty;
+                    gameState.map[m.y][m.x] = m.isBoss ? 'Ω' : 'E';
                 }
             }
         });
     }
 
-    function endGame(win) {
-        gameState.gameOver = true; draw();
-        setTimeout(() => { alert(win ? T.win : T.lose); init(); }, 100);
+    function useSkill() {
+        if (gameState.player.hp > 5) {
+            gameState.player.hp -= 5;
+            let x, y; do { x = Math.floor(Math.random()*30); y = Math.floor(Math.random()*15); } while(gameState.map[y][x] !== '·');
+            gameState.player.x = x; gameState.player.y = y;
+            addLog('warp', 'log-system');
+            monstersTurn(); updateVision(); draw();
+        }
     }
 
-    document.addEventListener('keydown', e => {
-        if (gameState.gameOver) return;
-        let dx = 0, dy = 0;
-        if (e.key === 'ArrowUp') dy = -1; else if (e.key === 'ArrowDown') dy = 1;
-        else if (e.key === 'ArrowLeft') dx = -1; else if (e.key === 'ArrowRight') dx = 1;
-        else if (e.key === ' ') { dx = 0; dy = 0; } else return;
-        e.preventDefault(); playerMove(dx, dy);
-    });
+    function updateVision() {
+        for (let y = 0; y < 15; y++) for (let x = 0; x < 30; x++)
+            if (Math.sqrt((x-gameState.player.x)**2 + (y-gameState.player.y)**2) <= gameState.player.vision) gameState.explored[y][x] = true;
+    }
 
-    init();
+    function openGuide() { document.getElementById('guide-overlay').style.display = 'flex'; }
+    function closeGuide() { document.getElementById('guide-overlay').style.display = 'none'; if(!gameState.initialized) init(); }
+    function endGame(win) { gameState.gameOver = true; alert(win ? i18n[curLang].win : i18n[curLang].lose); location.reload(); }
+
+    window.onload = () => { setLang('ja'); openGuide(); };
 </script>
 </body>
 </html>

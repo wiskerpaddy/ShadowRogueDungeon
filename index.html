@@ -2,49 +2,85 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shadow Dungeon RL - Edición Española</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Shadow Dungeon Mobile</title>
     <style>
         body {
             background-color: #0a0a0a;
             color: #d1d1d1;
             font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh;
             margin: 0;
             user-select: none;
+            touch-action: manipulation;
         }
         #game-container {
             text-align: center;
             border: 2px solid #444;
-            padding: 20px;
+            padding: 10px;
             background-color: #000;
-            box-shadow: 0 0 30px rgba(0,0,0,1);
+            width: 95%;
+            max-width: 450px;
         }
         #screen {
-            font-size: 18px;
+            font-size: 14px; /* スマホ向けに少し小さく */
             line-height: 1.1;
-            letter-spacing: 2px;
+            letter-spacing: 1px;
             white-space: pre;
-            margin-bottom: 20px;
-            color: #3f3; 
+            margin-bottom: 10px;
+            color: #3f3;
+            overflow-x: hidden;
         }
         #log {
-            height: 100px;
+            height: 80px;
             overflow-y: hidden;
-            font-size: 14px;
+            font-size: 12px;
             color: #888;
             text-align: left;
             border-top: 1px solid #222;
-            padding-top: 10px;
+            padding-top: 5px;
         }
-        .log-entry { margin-bottom: 4px; padding-left: 8px; border-left: 2px solid #333; }
+        /* コントローラー設定 */
+        #controls {
+            display: grid;
+            grid-template-areas: 
+                ". up ."
+                "left wait right"
+                ". down .";
+            gap: 10px;
+            margin-top: 15px;
+            justify-content: center;
+        }
+        .btn {
+            width: 60px;
+            height: 60px;
+            background-color: #222;
+            border: 1px solid #555;
+            color: white;
+            font-size: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 8px;
+            cursor: pointer;
+            active: background-color #444;
+        }
+        .btn:active { background-color: #444; }
+        #up { grid-area: up; }
+        #down { grid-area: down; }
+        #left { grid-area: left; }
+        #right { grid-area: right; }
+        #wait { grid-area: wait; background-color: #333; font-size: 14px; }
+
+        .log-entry { margin-bottom: 2px; padding-left: 5px; border-left: 2px solid #333; }
         .log-player { color: #fff; border-left-color: #fff; }
         .log-enemy { color: #ff5555; border-left-color: #ff5555; }
         .log-system { color: #55aaff; border-left-color: #55aaff; }
-        .log-boss { color: #ff55ff; font-weight: bold; border-left-color: #ff55ff; text-transform: uppercase; }
+        .log-boss { color: #ff55ff; font-weight: bold; border-left-color: #ff55ff; }
         .log-lvup { color: #ffff55; font-weight: bold; }
     </style>
 </head>
@@ -53,16 +89,23 @@
 <div id="game-container">
     <div id="screen"></div>
     <div id="log"></div>
+    
+    <div id="controls">
+        <div class="btn" id="up" onclick="playerMove(0, -1)">↑</div>
+        <div class="btn" id="left" onclick="playerMove(-1, 0)">←</div>
+        <div class="btn" id="wait" onclick="playerMove(0, 0)">WAIT</div>
+        <div class="btn" id="right" onclick="playerMove(1, 0)">→</div>
+        <div class="btn" id="down" onclick="playerMove(0, 1)">↓</div>
+    </div>
 </div>
 
 <script>
-    // --- Configuración ---
-    const WIDTH = 40;
-    const HEIGHT = 18;
+    const WIDTH = 30; // スマホ向けに横幅を少し狭く調整
+    const HEIGHT = 15;
     const MAX_DEPTH = 5;
-    const VISION_RADIUS = 5; 
+    const VISION_RADIUS = 4; 
 
-    const TILE_WALL = '■';
+    const TILE_WALL = '#';
     const TILE_FLOOR = '·';
     const TILE_PLAYER = '@';
     const TILE_MONSTER = 'E';
@@ -90,10 +133,8 @@
 
     const bossData = { name: 'El Guardián Antiguo', tile: 'Ω', hp: 60, atk: 12, exp: 0, color: '#f0f' };
 
-    // --- Lógica del Juego ---
-
     function init() {
-        addLog("Has entrado en la Mazmorra de las Sombras...", 'log-system');
+        addLog("Mazmorra de las Sombras...", 'log-system');
         gameState.depth = 1;
         gameState.player = { x: 0, y: 0, hp: 25, maxHp: 25, atk: 5, exp: 0, lv: 1, nextExp: 15 };
         gameState.gameOver = false;
@@ -105,9 +146,7 @@
         gameState.explored = Array.from({ length: HEIGHT }, () => Array(WIDTH).fill(false));
         gameState.monsters = [];
         gameState.items = [];
-
         placeOnFloor((x, y) => { gameState.player.x = x; gameState.player.y = y; });
-
         if (gameState.depth < MAX_DEPTH) {
             placeOnFloor((x, y) => gameState.map[y][x] = TILE_STAIRS);
         } else {
@@ -115,11 +154,10 @@
                 const boss = { ...bossData, x, y };
                 gameState.map[y][x] = TILE_BOSS;
                 gameState.monsters.push(boss);
-                addLog("El aire vibra en lo más profundo...", 'log-boss');
+                addLog("Presencia oscura detectada...", 'log-boss');
             });
         }
-
-        const numMonsters = 4 + gameState.depth;
+        const numMonsters = 3 + gameState.depth;
         for (let i = 0; i < numMonsters; i++) {
             if (gameState.depth === MAX_DEPTH && i === 0) continue;
             placeOnFloor((x, y) => {
@@ -128,12 +166,10 @@
                 gameState.map[y][x] = TILE_MONSTER;
             });
         }
-
         placeOnFloor((x, y) => {
             gameState.map[y][x] = TILE_POTION;
             gameState.items.push({ x, y });
         });
-
         updateVision();
         draw();
     }
@@ -175,16 +211,14 @@
         const screen = document.getElementById('screen');
         let view = "";
         const p = gameState.player;
-        let hud = `NIVEL:${p.lv}  HP:${p.hp}/${p.maxHp}  ATK:${p.atk}  EXP:${p.exp}/${p.nextExp}  PISO:${gameState.depth}F\n`;
+        let hud = `Nv:${p.lv} HP:${p.hp}/${p.maxHp} ATK:${p.atk} PISO:${gameState.depth}F\n`;
         
         for (let y = 0; y < HEIGHT; y++) {
             for (let x = 0; x < WIDTH; x++) {
                 const d = Math.sqrt((x - p.x)**2 + (y - p.y)**2);
                 const isVisible = d <= VISION_RADIUS;
-
-                if (x === p.x && y === p.y) {
-                    view += `<span style="color:#fff;">${TILE_PLAYER}</span>`;
-                } else if (isVisible) {
+                if (x === p.x && y === p.y) view += `<span style="color:#fff;">${TILE_PLAYER}</span>`;
+                else if (isVisible) {
                     let tile = gameState.map[y][x];
                     if (tile === TILE_MONSTER || tile === TILE_BOSS) {
                         const m = gameState.monsters.find(m => m.x === x && m.y === y);
@@ -196,11 +230,8 @@
                 } else if (gameState.explored[y][x]) {
                     let tile = gameState.map[y][x];
                     if (tile === TILE_WALL) view += `<span style="color:#1a1a1a;">${TILE_WALL}</span>`;
-                    else if (tile === TILE_STAIRS) view += `<span style="color:#440;">${TILE_STAIRS}</span>`;
                     else view += `<span style="color:#0f0f0f;">${TILE_FLOOR}</span>`;
-                } else {
-                    view += TILE_UNKNOWN;
-                }
+                } else view += TILE_UNKNOWN;
             }
             view += "\n";
         }
@@ -231,28 +262,30 @@
         else if (e.key === 'ArrowDown') dy = 1;
         else if (e.key === 'ArrowLeft') dx = -1;
         else if (e.key === 'ArrowRight') dx = 1;
-        else if (e.key === ' ') {} 
+        else if (e.key === ' ') { dx = 0; dy = 0; }
         else return;
         e.preventDefault();
         playerMove(dx, dy);
     });
 
     function playerMove(dx, dy) {
+        if (gameState.gameOver) return;
         const nx = gameState.player.x + dx;
         const ny = gameState.player.y + dy;
+        
         if (nx < 0 || nx >= WIDTH || ny < 0 || ny >= HEIGHT) return;
 
         const tile = gameState.map[ny][nx];
         if (tile === TILE_WALL) {
-            addLog("El camino está bloqueado.", 'log-system');
+            addLog("Camino bloqueado.", 'log-system');
         } else if (tile === TILE_MONSTER || tile === TILE_BOSS) {
             const m = gameState.monsters.find(m => m.x === nx && m.y === ny);
             if (m) {
                 const dmg = gameState.player.atk + Math.floor(Math.random() * 3);
                 m.hp -= dmg;
-                addLog(`¡Atacas a ${m.name} causando ${dmg} de daño!`, 'log-player');
+                addLog(`¡Atacas a ${m.name}! -${dmg}`, 'log-player');
                 if (m.hp <= 0) {
-                    addLog(`Has derrotado a ${m.name}.`, 'log-system');
+                    addLog(`Derrotaste a ${m.name}.`, 'log-system');
                     gainExp(m.exp);
                     gameState.map[m.y][m.x] = TILE_FLOOR;
                     gameState.monsters = gameState.monsters.filter(mon => mon !== m);
@@ -265,11 +298,11 @@
             gameState.player.y = ny;
             if (tile === TILE_POTION) {
                 gameState.player.hp = Math.min(gameState.player.maxHp, gameState.player.hp + 10);
-                addLog("Recoges una poción. Tus heridas sanan.", 'log-player');
+                addLog("Poción usada. HP +10", 'log-player');
                 gameState.map[ny][nx] = TILE_FLOOR;
             } else if (tile === TILE_STAIRS) {
                 gameState.depth++;
-                addLog(`Bajando al nivel inferior... (${gameState.depth}F)`, 'log-system');
+                addLog(`Bajando... Piso ${gameState.depth}F`, 'log-system');
                 setupLevel();
                 return;
             }
@@ -284,12 +317,9 @@
         gameState.player.exp += amt;
         if (gameState.player.exp >= gameState.player.nextExp) {
             const p = gameState.player;
-            p.lv++;
-            p.maxHp += 8; p.hp = p.maxHp;
-            p.atk += 3;
-            p.exp -= p.nextExp;
-            p.nextExp = Math.floor(p.nextExp * 1.6);
-            addLog(`¡Subiste de nivel! Sientes más poder (Nv${p.lv})`, 'log-lvup');
+            p.lv++; p.maxHp += 8; p.hp = p.maxHp; p.atk += 3;
+            p.exp -= p.nextExp; p.nextExp = Math.floor(p.nextExp * 1.6);
+            addLog(`¡Nivel alto! Nv${p.lv}`, 'log-lvup');
         }
     }
 
@@ -301,7 +331,7 @@
             if (dist === 1) {
                 const dmg = Math.max(1, m.atk - Math.floor(Math.random() * 2));
                 gameState.player.hp -= dmg;
-                addLog(`¡${m.name} ataca! Sufres ${dmg} de daño.`, 'log-enemy');
+                addLog(`${m.name} ataca! -${dmg}`, 'log-enemy');
                 if (gameState.player.hp <= 0) endGame(false);
             } else if (dist <= 5) {
                 let mx = m.x + (dx > 0 ? 1 : dx < 0 ? -1 : 0);
@@ -319,7 +349,7 @@
         gameState.gameOver = true;
         draw();
         setTimeout(() => {
-            alert(win ? "¡Has derrotado al Guardián y conquistado la mazmorra!" : "Has caído... las sombras te consumen.");
+            alert(win ? "¡Victoria!" : "Fin del juego...");
             init();
         }, 100);
     }

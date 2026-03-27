@@ -516,28 +516,30 @@ function addLog(key, type, params = {}) { gameState.log.push({ key, type, params
 function isGuideOpen() { return document.getElementById('guide-overlay').style.display === 'flex'; }
 function openGuide() { document.getElementById('guide-overlay').style.display = 'flex'; }
 function closeGuide() { 
-    document.getElementById('guide-overlay').style.display = 'none';
-    // 【重要】ここで一度だけAudioContextを作成
+    const overlay = document.getElementById('guide-overlay');
+    overlay.style.display = 'none';
     
+    // AudioContext の初期化と強制再開
     if (!audioCtx) {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    } else if (audioCtx.state === 'suspended') {
-        audioCtx.resume();
     }
     
-    // ★「ピコーン！」と鳴らす処理
-    // 1音目
-    playEffect(SOUND_DATA.START_GAME[0]);
-    // 0.08秒後に2音目を鳴らす
-    setTimeout(() => {
-        playEffect(SOUND_DATA.START_GAME[1]);
-    }, 80);
-    
-    // ★BGM開始（まだ鳴っていなければ）
-    if (!bgmTimer && !isMuted) {
-        playBGM();
-    }
-    
+    // Edge/Chrome対策: resume() を呼び出し、完了を待たずに音を鳴らす準備をする
+    audioCtx.resume().then(() => {
+        console.log("AudioContext resumed successfully");
+        
+        // 開始音（ピコーン！）を鳴らす
+        playEffect(SOUND_DATA.START_GAME[0]);
+        setTimeout(() => {
+            playEffect(SOUND_DATA.START_GAME[1]);
+        }, 80);
+
+        // BGMを開始
+        if (!bgmTimer && !isMuted) {
+            playBGM();
+        }
+    });
+
     if(!gameState.initialized){
         init();
     }

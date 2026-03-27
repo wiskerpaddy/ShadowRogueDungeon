@@ -331,9 +331,11 @@ function combat(nx, ny) {
 
 // function: プレイヤーの移動と特殊タイル(アイテム・階段)の処理
 function movePlayer(nx, ny, tile) {
-    gameState.player.x = nx; gameState.player.y = ny;
+    gameState.player.x = nx; 
+    gameState.player.y = ny;
+    playEffect(SOUND_DATA.MOVE); // ここで設定を呼び出す
     if (tile === 'L') {
-        playTone(880, 'sine', 0.2);
+        playEffect(SOUND_DATA.HEAL);
         gameState.player.hp = Math.min(gameState.player.maxHp, gameState.player.hp + CONFIG.HEAL_VAL);
         addLog('potion', 'log-player');
         gameState.map[ny][nx] = '·';

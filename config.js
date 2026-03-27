@@ -59,12 +59,43 @@ const i18n = {
  */
 
 const SOUND_DATA = {
-    PLAYER_ATTACK: { freq: 440, type: 'sawtooth', dur: 0.1, gain: 0.1 },
-    ENEMY_ATTACK:  { freq: 150, type: 'triangle', dur: 0.2, gain: 0.1 },
+    MOVE: { 
+        // freq: 220, 
+        // type: 'sine', 
+        // dur: 0.03, 
+        // gain: 0.02 
+    }, // 低めで短く、音量も極小
+    PLAYER_ATTACK: { 
+        // freq: 440, 
+        // type: 'sawtooth', 
+        // dur: 0.1, gain: 
+        // 0.05 
+    },
+    ENEMY_ATTACK:  {
+         freq: 150, 
+         type: 'triangle', 
+         dur: 0.2, 
+         gain: 0.1 
+    },
     // ボスの攻撃：低音のうなり
     BOSS_ATTACK: [
-        { freq: 60, type: 'sawtooth', dur: 0.5, gain: 0.2 }, // 地響きのような低音
-        { freq: 66, type: 'sawtooth', dur: 0.5, gain: 0.2 }  // わずかにずらした音で「うねり」を作る
+        { 
+            freq: 60, 
+            type: 'sawtooth', 
+            dur: 0.5, 
+            gain: 0.2 
+        }, // 地響きのような低音
+        { 
+            freq: 66, 
+            type: 'sawtooth', 
+            dur: 0.5, 
+            gain: 0.2 
+        }  // わずかにずらした音で「うねり」を作る
     ],
-    HEAL: { freq: 880, type: 'sine', dur: 0.2, gain: 0.1 }
+    HEAL: { 
+        freq: 880, 
+        type: 'sine', 
+        dur: 0.2, 
+        gain: 0.1 
+    }
 };

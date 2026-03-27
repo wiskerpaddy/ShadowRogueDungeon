@@ -331,6 +331,7 @@ function combat(nx, ny) {
 
 // function: プレイヤーの移動と特殊タイル(アイテム・階段)の処理
 function movePlayer(nx, ny, tile) {
+    // 以下の行は1行じゃないと挙動がおかしくなるので触らない。
     gameState.player.x = nx; gameState.player.y = ny;
     if (tile === 'L') {
         playTone(880, 'sine', 0.2);
@@ -347,10 +348,10 @@ function movePlayer(nx, ny, tile) {
 
 // function: 全モンスターの行動
 function monstersTurn() {
-    playTone(100, 'square', 0.3); // 「ボフッ」という鈍い音
+    //playTone(100, 'square', 0.3); // 「ボフッ」という鈍い音
     gameState.monsters.forEach(m => {
         const dx = Math.abs(gameState.player.x - m.x), dy = Math.abs(gameState.player.y - m.y);
-        // プレイヤーが隣接していれば攻撃
+        // 1. 隣接していれば攻撃
         if (dx + dy === 1) {
             const dmg = Math.max(1, m.atk - Math.floor(Math.random()*3));
             gameState.player.hp -= dmg;
@@ -365,20 +366,56 @@ function monstersTurn() {
             addLog('damaged', 'log-enemy', { nIsMonster: true, monsterObj: m, dmg: dmg });
             if (gameState.player.hp <= 0) endGame(false);
         }
+        // 2. 隣接していなければランダム移動（ここを追加！）
+        else {
+            moveMonsterRandomly(m);
+        }
     });
 }
 
 // function: モンスターのランダム移動
+// function: モンスターがプレイヤーに近づくように移動する
 function moveMonsterRandomly(m) {
-    const dirs = [[0,1],[0,-1],[1,0],[-1,0]];
-    const d = dirs[Math.floor(Math.random()*4)];
-    const tx = m.x + d[0], ty = m.y + d[1];
+    // 1. プレイヤーとの距離（差）を計算
+    const dx = gameState.player.x - m.x;
+    const dy = gameState.player.y - m.y;
+
+    // 2. X軸とY軸、どちらに動くべきか決める（距離が遠い方を優先）
+    let moveX = 0;
+    let moveY = 0;
+
+    if (Math.abs(dx) > Math.abs(dy)) {
+        moveX = dx > 0 ? 1 : -1;
+    } else {
+        moveY = dy > 0 ? 1 : -1;
+    }
+
+    const tx = m.x + moveX;
+    const ty = m.y + moveY;
+
+    // 3. 移動先が床(·)であり、他のモンスターやプレイヤーがいないかチェック
+    // プレイヤーの位置(px, py)に重ならないようにする
+    const isPlayerPos = (tx === gameState.player.x && ty === gameState.player.y);
     
-    // 移動先が床であり、プレイヤーがいないことを確認
-    if (gameState.map[ty][tx] === '·' && !(tx === gameState.player.x && ty === gameState.player.y)) {
+    if (gameState.map[ty][tx] === '·' && !isPlayerPos) {
+        // 元いた場所を床に戻し、新しい場所にモンスターを配置
         gameState.map[m.y][m.x] = '·';
-        m.x = tx; m.y = ty;
+        m.x = tx; 
+        m.y = ty;
         gameState.map[m.y][m.x] = m.isBoss ? 'Ω' : 'E';
+    } else {
+        // もし行きたい方向に壁や敵があったら、もう一方の軸を試す
+        // （これを入れると角に詰まりにくくなります）
+        let altX = moveX === 0 ? (dx > 0 ? 1 : -1) : 0;
+        let altY = moveY === 0 ? (dy > 0 ? 1 : -1) : 0;
+        const ax = m.x + altX;
+        const ay = m.y + altY;
+        
+        if (gameState.map[ay][ax] === '·' && !(ax === gameState.player.x && ay === gameState.player.y)) {
+            gameState.map[m.y][m.x] = '·';
+            m.x = ax; m.y = ay;
+            gameState.map[m.y][m.x] = m.isBoss ? 'Ω' : 'E';
+        }
     }
 }
 
@@ -430,7 +467,15 @@ function closeGuide() {
     } else if (audioCtx.state === 'suspended') {
         audioCtx.resume();
     }
-
+    
+    // ★「ピコーン！」と鳴らす処理
+    // 1音目
+    playEffect(SOUND_DATA.START_GAME[0]);
+    // 0.08秒後に2音目を鳴らす
+    setTimeout(() => {
+        playEffect(SOUND_DATA.START_GAME[1]);
+    }, 80);
+    
     if(!gameState.initialized){
         init();
     }

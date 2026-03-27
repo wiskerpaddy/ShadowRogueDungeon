@@ -92,10 +92,23 @@ const SOUND_DATA = {
             gain: 0.2 
         }  // わずかにずらした音で「うねり」を作る
     ],
+    START_GAME: [
+        { 
+            freq: 660, 
+            type: 'sine', 
+            dur: 0.1, 
+            gain: 0.1 }, // 「ピ」
+        { 
+            freq: 880, 
+            type: 'sine', 
+            dur: 0.2, 
+            gain: 0.1 }  // 「コーン！」
+    ],
     HEAL: { 
         freq: 880, 
         type: 'sine', 
         dur: 0.2, 
         gain: 0.1 
     }
+
 };

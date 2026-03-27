@@ -52,3 +52,19 @@ const i18n = {
         win: "¡Solista de leyenda!", lose: "Música detenida..."
     }
 };
+
+/**
+ * config.js
+ * サウンド設定を追加
+ */
+
+const SOUND_DATA = {
+    PLAYER_ATTACK: { freq: 440, type: 'sawtooth', dur: 0.1, gain: 0.1 },
+    ENEMY_ATTACK:  { freq: 150, type: 'triangle', dur: 0.2, gain: 0.1 },
+    // ボスの攻撃：低音のうなり
+    BOSS_ATTACK: [
+        { freq: 60, type: 'sawtooth', dur: 0.5, gain: 0.2 }, // 地響きのような低音
+        { freq: 66, type: 'sawtooth', dur: 0.5, gain: 0.2 }  // わずかにずらした音で「うねり」を作る
+    ],
+    HEAL: { freq: 880, type: 'sine', dur: 0.2, gain: 0.1 }
+};

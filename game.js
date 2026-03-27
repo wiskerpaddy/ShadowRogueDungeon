@@ -45,6 +45,59 @@ function setLang(lang) {
     if (gameState.initialized) draw();
 }
 
+/**
+ * Web Audio APIを使ってシンセ音を鳴らす
+ * @param {number} freq 周波数 (Hz)
+ * @param {string} type 波形 ('sine', 'square', 'sawtooth', 'triangle')
+ * @param {number} duration 鳴らす時間 (秒)
+ */
+function playTone(freq, type, duration) {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, ctx.currentTime);
+    
+    // 音量制御（鳴り始めは大きく、最後はスッと消える）
+    gain.gain.setValueAtTime(0.1, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start();
+    osc.stop(ctx.currentTime + duration);
+}
+
+/**
+ * game.js
+ * 改良版：音のレシピ（配列または単体）を受け取って再生する
+ */
+function playEffect(data) {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    
+    // 配列ならすべて鳴らす、単体なら配列化してループ
+    const sounds = Array.isArray(data) ? data : [data];
+
+    sounds.forEach(s => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.type = s.type;
+        osc.frequency.setValueAtTime(s.freq, ctx.currentTime);
+        
+        gain.gain.setValueAtTime(s.gain, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + s.dur);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start();
+        osc.stop(ctx.currentTime + s.dur);
+    });
+}
+
 // function: ゲームの初期セットアップ
 function init() {
     gameState.player = { 
@@ -241,6 +294,7 @@ function handleInput(dx, dy) {
     const tile = gameState.map[ny][nx];
 
     if (tile === '#') {
+        playTone(440, 'sine', 0.05); // 「ポッ」という短い音
         addLog('wall', 'log-system'); // 壁
     } else if (tile === 'E' || tile === 'Ω') {
         combat(nx, ny); // 戦闘
@@ -258,6 +312,7 @@ function handleInput(dx, dy) {
 
 // function: 戦闘処理
 function combat(nx, ny) {
+    playTone(150, 'sawtooth', 0.2); // 「ザシュッ」という感じの音
     const m = gameState.monsters.find(m => m.x === nx && m.y === ny);
     const dmg = gameState.player.atk + Math.floor(Math.random()*5);
     m.hp -= dmg;
@@ -276,10 +331,12 @@ function combat(nx, ny) {
 function movePlayer(nx, ny, tile) {
     gameState.player.x = nx; gameState.player.y = ny;
     if (tile === 'L') {
+        playTone(880, 'sine', 0.2);
         gameState.player.hp = Math.min(gameState.player.maxHp, gameState.player.hp + CONFIG.HEAL_VAL);
         addLog('potion', 'log-player');
         gameState.map[ny][nx] = '·';
     } else if (tile === '>') {
+        playTone(523.25, 'sine', 0.1); setTimeout(() => playTone(659.25, 'sine', 0.1), 100);
         gameState.depth++;
         addLog('stairs', 'log-system', { d: gameState.depth });
         setupLevel(); // 次の階層へ
@@ -288,16 +345,23 @@ function movePlayer(nx, ny, tile) {
 
 // function: 全モンスターの行動
 function monstersTurn() {
+    playTone(100, 'square', 0.3); // 「ボフッ」という鈍い音
     gameState.monsters.forEach(m => {
         const dx = Math.abs(gameState.player.x - m.x), dy = Math.abs(gameState.player.y - m.y);
         // プレイヤーが隣接していれば攻撃
         if (dx + dy === 1) {
             const dmg = Math.max(1, m.atk - Math.floor(Math.random()*3));
             gameState.player.hp -= dmg;
+            
+            // ボスかどうかで音を出し分ける！
+            if (m.isBoss) {
+                playEffect(SOUND_DATA.BOSS_ATTACK); // 怖いうなり音
+            } else {
+                playEffect(SOUND_DATA.ENEMY_ATTACK); // 通常の攻撃音
+            }
+
             addLog('damaged', 'log-enemy', { nIsMonster: true, monsterObj: m, dmg: dmg });
-            if (gameState.player.hp <= 0) endGame(false); // ゲームオーバー
-        } else {
-            moveMonsterRandomly(m); // それ以外はランダム移動
+            if (gameState.player.hp <= 0) endGame(false);
         }
     });
 }
@@ -334,6 +398,8 @@ function checkLvUp() {
     const p = gameState.player; 
     p.exp += 10;
     if (p.exp >= p.nextExp) {
+        playTone(523.25, 'sine', 0.1); 
+        setTimeout(() => playTone(659.25, 'sine', 0.1), 100);
         p.lv++; p.maxHp += 10; p.hp = p.maxHp; p.atk += 4; p.exp = 0;
         addLog('lvup', 'log-lvup', { l: p.lv });
     }

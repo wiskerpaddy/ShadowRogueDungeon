@@ -79,15 +79,17 @@ const SOUND_DATA = {
 
     // ゲーム開始：ピコーン
     START_GAME: [
-        { freq: 660, type: 'sine', dur: 0.1, gain: 0.1 }, // 「ピ」
-        { freq: 880, type: 'sine', dur: 0.2, gain: 0.1 }  // 「コーン！」
+        { freq: 660, type: 'square', dur: 0.1, gain: 0.1 }, // 「ピ」
+        { freq: 880, type: 'square', dur: 0.2, gain: 0.1 },  // 「コーン！」
+        { freq: 660, type: 'square', dur: 0.1, gain: 0.1 }, // 「ピ」
+        { freq: 880, type: 'square', dur: 0.2, gain: 0.1 }  // 「コーン！」
     ],
     
     // ワープ：音が上昇していく不思議な感じ
     WARP: [
-        { freq: 440, type: 'square', dur: 0.05, gain: 0.1 },
-        { freq: 660, type: 'square', dur: 0.05, gain: 0.1 },
-        { freq: 880, type: 'square', dur: 0.1, gain: 0.1 }
+        { freq: 440, type: 'square', dur: 0.2, gain: 0.1 },
+        { freq: 660, type: 'square', dur: 0.2, gain: 0.1 },
+        { freq: 880, type: 'square', dur: 0.4, gain: 0.1 }
     ],
 
     // 回復：柔らかい高音
@@ -105,8 +107,12 @@ const SOUND_DATA = {
     
     // 階段：一段ずつ上がるような音
     STAIRS: [
-        { freq: 150, type: 'triangle', dur: 0.1, gain: 0.1 },
-        { freq: 200, type: 'triangle', dur: 0.1, gain: 0.1 }
+        { freq: 300, type: 'triangle', dur: 0.2, gain: 0.1 },
+        { freq: 400, type: 'triangle', dur: 0.2, gain: 0.1 },
+        { freq: 300, type: 'triangle', dur: 0.2, gain: 0.1 },
+        { freq: 400, type: 'triangle', dur: 0.2, gain: 0.1 },
+        { freq: 300, type: 'triangle', dur: 0.2, gain: 0.1 },
+        { freq: 400, type: 'triangle', dur: 0.2, gain: 0.1 }
     ],
     
     // 敵撃破：気持ちいい音

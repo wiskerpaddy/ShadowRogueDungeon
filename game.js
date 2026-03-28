@@ -285,6 +285,15 @@ function moveMonsterRandomly(m) {
 function useSkill() {
     if (gameState.player.hp > CONFIG.WARP_COST && !gameState.gameOver) {
         gameState.player.hp -= CONFIG.WARP_COST;
+        
+        // 画面を一瞬白く光らせる演出（CSSでscreenの背景色を一時的に変えるなど）
+        const screen = document.getElementById('screen');
+        screen.style.backgroundColor = '#444'; 
+        setTimeout(() => { screen.style.backgroundColor = '#000'; }, 50);
+
+        playEffect(SOUND_DATA.WARP);
+        addLog('warp', 'log-system');
+
         const pos = findEmptyFloor();
         gameState.player.x = pos.x; gameState.player.y = pos.y;
         playEffect(SOUND_DATA.WARP); addLog('warp', 'log-system');

@@ -254,19 +254,19 @@ function draw() {
     let view = "";
     for (let y = 0; y < CONFIG.MAP_H; y++) {
         for (let x = 0; x < CONFIG.MAP_W; x++) {
-            // 視界の計算（三平方の定理）
+            // 視界の計算
             const isVisible = Math.sqrt((x - p.x)**2 + (y - p.y)**2) <= p.vision;
+            
+            // 既存の関数からタイル情報を取得
             const info = getTileDisplay(x, y, isVisible);
             
-            // 記号を色付きのspanで囲む
-            view += `<span style="color:${info.color};">${info.c}</span>`;
+            // ★ここを修正：id="cell-x-y" を追加して識別可能にする
+            view += `<span id="cell-${x}-${y}" style="color:${info.color};">${info.c}</span>`;
         }
-        view += "\n"; // 行末で改行
+        view += "\n";
     }
     
-    // innerHTML を使うことで <span> タグを有効化
     screen.innerHTML = hud + view;
-    
     updateLogUI(T);
 }
 
@@ -510,26 +510,36 @@ function toggleAchievements() {
     }
 }
 
-function useShockwave() {
-    if (gameState.player.hp <= CONFIG.SHOCKWAVE_COST) return;
-    
-    gameState.player.hp -= CONFIG.SHOCKWAVE_COST;
-    playEffect({freq: 150, type: 'sawtooth', dur: 0.3, gain: 0.1});
-    
-    // 周囲1マスの敵すべてにダメージ
-    gameState.monsters.forEach(m => {
-        const dx = Math.abs(m.x - gameState.player.x);
-        const dy = Math.abs(m.y - gameState.player.y);
-        if (dx <= 1 && dy <= 1) {
-            m.hp -= 15; // 固定ダメージ
-            addLog(`${i18n[curLang].bName}に衝撃波！`, 'log-player');
-        }
-    });
-    
-    // 敵のターンへ
-    monstersTurn();
-    draw();
-}
+// function useShockwave() {
+//     console.log(document.getElementById("cell-" + px + "-" + py))
+//     // 1. まず再描画して ID 付きの <span> を生成させる
+//     draw(); 
+
+//     // 2. その直後に要素を取得する
+//     const px = gameState.player.x;
+//     const py = gameState.player.y;
+
+//     for (let dy = -1; dy <= 1; dy++) {
+//         for (let dx = -1; dx <= 1; dx++) {
+//             const tx = px + dx;
+//             const ty = py + dy;
+
+//             // ID名が draw() で作ったものと完全に一致しているか確認
+//             const cell = document.getElementById(`cell-${tx}-${ty}`);
+            
+//             if (cell) {
+//                 // 強制的にスタイルを上書きして確認
+//                 cell.style.backgroundColor = "yellow"; 
+//                 cell.classList.add('glow-effect');
+                
+//                 setTimeout(() => {
+//                     cell.classList.remove('glow-effect');
+//                     cell.style.backgroundColor = ""; // 元に戻す
+//                 }, 500);
+//             }
+//         }
+//     }
+// }
 
 function endGame(win) { gameState.gameOver = true; alert(win ? i18n[curLang].win : i18n[curLang].lose); location.reload(); }
 

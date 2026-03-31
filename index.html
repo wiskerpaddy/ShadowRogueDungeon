@@ -16,7 +16,17 @@
                 <button id="btn-es" class="lang-btn" onclick="setLang('es')">ES</button>
                 <button id="mute-btn" class="lang-btn" onclick="toggleMute()">🔊</button>
             </div>
-            <div class="help-circle" onclick="openGuide()">?</div>
+            <div class="top-icons">
+                <div class="ach-circle" id="ach-btn" onclick="toggleAchievements()">🏆</div>
+                <div class="help-circle" onclick="openGuide()">?</div>
+            </div>
+        </div>
+        <div id="ach-overlay" style="display:none;" onclick="toggleAchievements()">
+            <div class="ach-modal" onclick="event.stopPropagation()">
+                <h3 id="ach-modal-title">Achievements</h3>
+                <div id="ach-list"></div>
+                <button class="close-btn" onclick="toggleAchievements()">Close</button>
+            </div>
         </div>
 
         <div id="guide-overlay" onclick="closeGuide()">

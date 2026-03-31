@@ -58,7 +58,10 @@ function toggleMute() {
 let curLang = 'en';
 let gameState = { 
     depth: 1, player: {}, map: [], explored: [], monsters: [], log: [], 
-    gameOver: false, initialized: false 
+    gameOver: false, initialized: false,
+    // --- 追加: 実績用カウント ---
+    totalKills: 0,
+    warpCount: 0
 };
 
 // --- 3. システム関数 (言語・音効) ---
@@ -99,7 +102,13 @@ function playEffect(data) {
 // --- 4. 初期化とレベル生成 ---
 function init() {
     gameState.player = { x: 0, y: 0, hp: 30, maxHp: 30, atk: 6, exp: 0, lv: 1, nextExp: 15, vision: 4 };
-    gameState.depth = 1; gameState.log = []; gameState.gameOver = false;
+    gameState.depth = 1; 
+    gameState.log = []; 
+    gameState.gameOver = false;
+    // --- ここを追加 ---
+    gameState.totalKills = 0;
+    gameState.warpCount = 0;
+    // ------------------
     addLog('start', 'log-system');
     setupLevel();
     gameState.initialized = true;
@@ -248,6 +257,7 @@ function handleInput(dx, dy) {
     }
     if (!gameState.gameOver) {
         monstersTurn();
+        checkAchievements(); // HP1の実績などをチェック
         updateVision(); 
         draw();
     }
@@ -262,8 +272,9 @@ function movePlayer(nx, ny, tile) {
         addLog('potion', 'log-player');
         gameState.map[ny][nx] = T.FLOOR;
     } else if (tile === T.STAIRS) {
-        playEffect(SOUND_DATA.STAIRS);
         gameState.depth++;
+        checkAchievements(); // 2F到達の実績などがここで発動する
+        playEffect(SOUND_DATA.STAIRS);
         addLog('stairs', 'log-system', { d: gameState.depth });
         setupLevel();
     } else {
@@ -278,6 +289,17 @@ function combat(nx, ny) {
     m.hp -= dmg;
     addLog('attack', 'log-player', { nIsMonster: true, monsterObj: m, dmg: dmg });
     if (m.hp <= 0) {
+        gameState.totalKills++; // 討伐数を加算
+        // --- ここからボス撃破判定 ---
+        if (m.isBoss) {
+            gameState.bossDefeated = true; // フラグを立てる
+            checkAchievements();           // レベルに応じた実績を即座にチェック
+            playEffect(SOUND_DATA.DEFEATED);
+            addLog('defeat', 'log-system', { nIsMonster: true, monsterObj: m });
+            return endGame(true); 
+        }
+        // --------------------------
+        checkAchievements();    // チェック
         playEffect(SOUND_DATA.DEFEATED);
         addLog('defeat', 'log-system', { nIsMonster: true, monsterObj: m });
         gameState.map[ny][nx] = CONFIG.TILES.FLOOR;
@@ -317,7 +339,10 @@ function moveMonsterRandomly(m) {
 
 function useSkill() {
     // HPが1以上あれば発動可能にする
-    if (gameState.player.hp > 0 && !gameState.gameOver) {
+if (gameState.player.hp > 0 && !gameState.gameOver) {
+        // ...コスト計算
+        gameState.warpCount++; // ワープ回数を加算
+        checkAchievements();   // チェック
         // 現在のHPの20%を計算（端数切り上げ）
         const cost = Math.ceil(gameState.player.hp * 0.2);
         gameState.player.hp -= cost;
@@ -398,6 +423,49 @@ function closeGuide() {
         if (!bgmTimer && !isMuted) { playBGM(); }
     });
     if(!gameState.initialized) init();
+}
+
+function checkAchievements() {
+    Object.values(ACHIEVEMENTS).forEach(ach => {
+        // まだ解除されておらず、かつ条件を満たしているか
+        if (!unlockedAchievements.includes(ach.id) && ach.check()) {
+            unlockedAchievements.push(ach.id);
+            localStorage.setItem('rogue_achievements', JSON.stringify(unlockedAchievements));
+            
+            // ログに通知を表示（i18nに achievement 用のキーがない場合は直接表示）
+            addLog(`🏆【実績解除】${ach.name}`, 'log-system');
+            
+            // お祝いの音（START_GAMEの音を流用、または新規作成）
+            playEffect({ freq: 880, type: 'triangle', dur: 0.5, gain: 0.05 });
+        }
+    });
+}
+
+function toggleAchievements() {
+    const overlay = document.getElementById('ach-overlay');
+    const list = document.getElementById('ach-list');
+    
+    // 表示の切り替え
+    if (overlay.style.display === 'none') {
+        // リストを生成
+        list.innerHTML = "";
+        Object.values(ACHIEVEMENTS).forEach(ach => {
+            const isUnlocked = unlockedAchievements.includes(ach.id);
+            const div = document.createElement('div');
+            div.className = `ach-item ${isUnlocked ? 'unlocked' : 'locked'}`;
+            div.innerHTML = `
+                <span style="font-size:20px">${isUnlocked ? '🏆' : '🔒'}</span>
+                <div>
+                    <div style="font-weight:bold; font-size:14px">${ach.name}</div>
+                    <div style="font-size:11px; color:#aaa">${ach.desc}</div>
+                </div>
+            `;
+            list.appendChild(div);
+        });
+        overlay.style.display = 'flex';
+    } else {
+        overlay.style.display = 'none';
+    }
 }
 
 function endGame(win) { gameState.gameOver = true; alert(win ? i18n[curLang].win : i18n[curLang].lose); location.reload(); }

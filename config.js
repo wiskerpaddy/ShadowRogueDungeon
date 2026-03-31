@@ -33,6 +33,54 @@ const CONFIG = {
     }
 };
 
+const ACHIEVEMENTS = {
+    FIRST_STEP: { 
+        id: 'first_step', 
+        name: '最初の探検', 
+        desc: '地下2階に到達した', 
+        check: () => gameState.depth >= 2 
+    },
+    MONSTER_KILLER: { 
+        id: 'monster_killer', 
+        name: '魔物ハンター', 
+        desc: '累計10体の敵を倒した', 
+        check: () => gameState.totalKills >= 10 
+    },
+    SURVIVOR: { 
+        id: 'survivor', 
+        name: '九死に一生', 
+        desc: 'HP 1で生き残った', 
+        check: () => gameState.player.hp === 1 
+    },
+    WARP_ADDICT: { 
+        id: 'warp_addict', 
+        name: '時空の旅人', 
+        desc: 'ワープを5回以上使用した', 
+        check: () => gameState.warpCount >= 5 
+    },
+    BOSS_KILLER_LV5: { 
+        id: 'boss_lv5', 
+        name: '熟練の奏者', 
+        desc: 'Lv5以下でボスを撃破した', 
+        check: () => gameState.bossDefeated && gameState.player.lv <= 5 
+    },
+    BOSS_KILLER_LV4: { 
+        id: 'boss_lv4', 
+        name: '精鋭の独奏', 
+        desc: 'Lv4以下でボスを撃破した', 
+        check: () => gameState.bossDefeated && gameState.player.lv <= 4 
+    },
+    BOSS_KILLER_LV3: { 
+        id: 'boss_lv3', 
+        name: '伝説の神童', 
+        desc: 'Lv3以下でボスを撃破した', 
+        check: () => gameState.bossDefeated && gameState.player.lv <= 3 
+    }
+};
+
+// 達成済みのIDを保存する配列
+let unlockedAchievements = JSON.parse(localStorage.getItem('rogue_achievements')) || [];
+
 
 /**
  * 2. 多言語定義 (i18n)

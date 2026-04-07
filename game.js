@@ -24,21 +24,29 @@ function startAdventureMode() {
     }
 }
 
-function startStudyMode() {
+async function startStudyMode() {
+    // 画面切り替え
     document.getElementById('guide-overlay').style.display = 'none';
     document.getElementById('study-screen').style.display = 'flex';
-    
-    // ★ テスト用にデータを無理やり入れる（本来はfetchで取得）
-    if (wordsData.length === 0) {
+
+    try {
+        // words.json を読み込む
+        const response = await fetch('words.json');
+        if (!response.ok) throw new Error('Network response was not ok');
+        
+        wordsData = await response.json();
+        console.log("読み込み成功:", wordsData);
+        
+        currentCardIdx = 0;
+        showCard();
+    } catch (error) {
+        console.error("JSON読み込み失敗:", error);
+        // 失敗した時のフォールバック（予備データ）
         wordsData = [
-            {q: "794年、平安京に都を移したのは？", a: "桓武天皇"},
-            {q: "1192年、鎌倉幕府を開いたのは？", a: "源頼朝"},
-            {q: "1543年、鉄砲が伝来した場所は？", a: "種子島"}
+            { q: "JSONが読み込めませんでした", a: "サーバー(Live Server等)を起動しているか確認してください" }
         ];
+        showCard();
     }
-    
-    currentCardIdx = 0; // 最初のカードから
-    showCard();
 }
 
 // --- オーディオ再開用の共通関数 ---
